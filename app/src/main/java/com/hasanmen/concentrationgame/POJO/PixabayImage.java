@@ -9,14 +9,24 @@ public class PixabayImage {
     private String previewURL;
     private int imageWidth;
     private int imageHeight;
+    private String webformatURL;
 
     public PixabayImage() {
     }
 
-    public PixabayImage(String previewURL, int imageWidth, int imageHeight) {
+    public PixabayImage(String previewURL,String webformatURL, int imageWidth, int imageHeight) {
         this.previewURL = previewURL;
         this.imageWidth = imageWidth;
         this.imageHeight = imageHeight;
+        this.webformatURL=webformatURL;
+    }
+
+    public String getWebformatURL() {
+        return webformatURL;
+    }
+
+    public void setWebformatURL(String webformatURL) {
+        this.webformatURL = webformatURL;
     }
 
     public String getPreviewURL() {
@@ -49,6 +59,7 @@ public class PixabayImage {
                 "previewURL='" + previewURL + '\'' +
                 ", imageWidth=" + imageWidth +
                 ", imageHeight=" + imageHeight +
+                ", webformatURL='" + webformatURL + '\'' +
                 '}';
     }
 }

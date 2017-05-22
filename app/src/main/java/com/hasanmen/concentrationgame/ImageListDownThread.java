@@ -25,13 +25,14 @@ public class ImageListDownThread extends Thread {
 
     private URL url = null;
     private HttpURLConnection urlConnection = null;
-    private ArrayList<PixabayImage> imageList = new ArrayList<>();
+    private ArrayList<PixabayImage> imageList;
 
     private int imageNumber; // default different image number
 
     //https://pixabay.com/api/?key=5429432-e78aeb946ac4de95966734b5c&q=yellow+flowers&image_type=photo&pretty=true
 
-    public ImageListDownThread() {
+    public ImageListDownThread(ArrayList<PixabayImage> imageList) {
+        this.imageList = imageList;
         imageNumber = 4;
     }
 
@@ -92,6 +93,7 @@ public class ImageListDownThread extends Thread {
                 image.setPreviewURL(jsonImageArray.getJSONObject(i).getString("previewURL"));
                 image.setImageHeight(jsonImageArray.getJSONObject(i).getInt("imageHeight"));
                 image.setImageWidth(jsonImageArray.getJSONObject(i).getInt("imageWidth"));
+                image.setWebformatURL(jsonImageArray.getJSONObject(i).getString("webformatURL"));
                 imageList.add(image);
                 Log.d(LOG_KEY, "Image:" + image.toString());
             }
