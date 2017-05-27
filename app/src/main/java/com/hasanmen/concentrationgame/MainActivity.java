@@ -7,6 +7,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 
 import com.hasanmen.concentrationgame.POJO.PixabayImage;
 
@@ -17,8 +19,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String LOG_KEY="MainActivity";
 
     private ImageButton btn_init=null;
+    private ArrayList<Button> buttons = new ArrayList<>();
     private ArrayList<PixabayImage> pixabayImages = new ArrayList<>();
     private ArrayList<Bitmap> bitmaps = new ArrayList<>();
+    private TableLayout tableLayout=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,11 +30,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         btn_init = (ImageButton)findViewById(R.id.imgBtn_init);
+        tableLayout = (TableLayout) findViewById(R.id.btnArea);
+
+        initBtnArea();
 
         btn_init.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
+
                     ImageListDownThread imageListDownThread = new ImageListDownThread(pixabayImages); // run thread to download list
                     imageListDownThread.start();
 
@@ -54,4 +62,22 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
+    private void initBtnArea(){
+
+        for(int i=0;i<4;++i){
+            TableRow tableRow = new TableRow(this);
+            tableLayout.addView(tableRow);
+
+            for(int j=0;j<4;++j){
+                Button btn = new Button(this);
+                btn.setText("Btn"+j*i+j);
+
+                buttons.add(btn);
+                tableRow.addView(btn);
+            }
+        }
+
+    }
+
 }
