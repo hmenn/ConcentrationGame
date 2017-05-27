@@ -1,6 +1,7 @@
 package com.hasanmen.concentrationgame;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,21 +19,32 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String LOG_KEY = "MainActivity";
 
     private ImageButton btn_init = null;
-    private ArrayList<Button> buttons = new ArrayList<>();
+    private ArrayList<ImageButton> buttons = new ArrayList<>();
     private ArrayList<PixabayImage> pixabayImages = new ArrayList<>();
     private ArrayList<Bitmap> bitmaps = new ArrayList<>();
     private TableLayout tableLayout = null;
     private ProgressBar progressBar = null;
+    private Object lock = new Object();
+
+    private void addList(Bitmap bitmap) {
+        synchronized (lock) {
+            bitmaps.add(bitmap);
+
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,23 +62,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 try {
 
-                    ImageListDownTask imageListDownTask = new ImageListDownTask(8);
-                    imageListDownTask.execute();
-
-                   /* ImageListDownThread imageListDownThread = new ImageListDownThread(pixabayImages); // run thread to download list
-                    imageListDownThread.start();
-
-                    // TODO: ADD LOADING IMAGE
-
-                    imageListDownThread.join(); // wait until image list downloaded
-
-                    ImageDownThread imageDownThread = new ImageDownThread(pixabayImages.get(0),bitmaps);
-                    imageDownThread.start();
-
-                    imageDownThread.join();
-                    Log.d(LOG_KEY,"Downloaded "+bitmaps.size());
-
-                    btn_init.setImageBitmap(bitmaps.get(0));*/
+                    ImageListDownTask imageListDownTask = new ImageListDownTask();
+                    imageListDownTask.execute(4);
 
                 } catch (Exception e) {
                     Log.d(LOG_KEY, "ImageListDownThread " + e.getMessage());
@@ -77,20 +74,35 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void initBtnArea(int n) {
 
-    private class ImageListDownTask extends AsyncTask<Void, Void, Void> {
+        for (int i = 0; i < n; ++i) {
+            TableRow tableRow = new TableRow(MainActivity.this);
+            tableLayout.addView(tableRow);
+
+            for (int j = 0; j < n; ++j) {
+                ImageButton btn = new ImageButton(MainActivity.this);
+                //btn.setText("Btn" + i + "" + j);
+                buttons.add(btn);
+                tableRow.addView(btn);
+            }
+        }
+    }
+
+
+    private class ImageListDownTask extends AsyncTask<Integer, Void, Integer> {
         private final static String LOG_KEY = "ImageListDownThread";
         private final static String PIXABAY_API_KEY = "5429432-e78aeb946ac4de95966734b5c";
         private final static String REQUEST = "https://pixabay.com/api/?key=5429432-e78aeb946ac4de95966734b5c";
 
         private URL url = null;
         private HttpURLConnection urlConnection = null;
+        private ArrayList<ImageDownThread> imageDownThreads = new ArrayList<>();
 
         private int imageNumber; // default different image number
 
-        public ImageListDownTask(int imageNumber) {
+        public ImageListDownTask() {
             super();
-            this.imageNumber = imageNumber;
         }
 
         @Override
@@ -101,10 +113,15 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
+        protected void onPostExecute(Integer imageNumber) {
+            super.onPostExecute(imageNumber);
             progressBar.setVisibility(View.GONE);
-            initBtnArea(4);
+
+            initBtnArea(imageNumber);
+            for (int i = 0; i < imageNumber * imageNumber; ++i) {
+                buttons.get(i).setImageBitmap(bitmaps.get(i));
+
+            }
         }
 
         @Override
@@ -114,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onCancelled(Void aVoid) {
+        protected void onCancelled(Integer aVoid) {
             super.onCancelled(aVoid);
         }
 
@@ -124,11 +141,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected Integer doInBackground(Integer... params) {
 
             StringBuilder sb = new StringBuilder(REQUEST);
 
             try {
+
+                if (params.length == 0)
+                    throw new InvalidParameterException();
+
+                imageNumber = params[0] * params[0] / 2;
                 // prepare request
                 sb.append("&per_page=" + imageNumber);
                 sb.append("&q=yellow+cars+red");
@@ -151,14 +173,28 @@ public class MainActivity extends AppCompatActivity {
 
                 // parse json string and get image list
                 pixabayImages = parsePixaJSON(jsonMsg.toString());
-                Log.d(LOG_KEY, "Size:" + pixabayImages.size());
+                Log.d(LOG_KEY, "Download :" + imageNumber + " image address");
+
+
+                for (int i = 0; i < imageNumber * 2; ++i) {
+                    ImageDownThread imageDownThread = new ImageDownThread(pixabayImages.get(i / 2), bitmaps);
+                    imageDownThreads.add(imageDownThread);
+                    imageDownThread.start();
+                }
+
+                for (int i = 0; i < imageNumber * 2; ++i) {
+                    imageDownThreads.get(i).join();
+                    Log.d(LOG_KEY, "Thread " + i + " joined");
+                }
+
+
             } catch (Exception e) {
                 Log.e(LOG_KEY, e.getMessage());
             } finally {
                 // close url connection
                 urlConnection.disconnect();
             }
-            return null;
+            return params[0];
         }
 
 
@@ -186,23 +222,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             return images;
-        }
-
-        private void initBtnArea(int n) {
-
-            for (int i = 0; i < n; ++i) {
-                TableRow tableRow = new TableRow(MainActivity.this);
-                tableLayout.addView(tableRow);
-
-                for (int j = 0; j < n; ++j) {
-                    Button btn = new Button(MainActivity.this);
-                    btn.setText("Btn" + j * i + j);
-
-                    //buttons.add(btn);
-                    tableRow.addView(btn);
-                }
-            }
-
         }
     }
 }

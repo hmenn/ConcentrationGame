@@ -25,7 +25,7 @@ public class ImageDownThread extends Thread {
     private URL url;
     private HttpURLConnection httpURLConnection;
     private ArrayList<Bitmap> list;
-    private Object lock = new Object();
+    private static Object lock = new Object();
 
     public ImageDownThread(PixabayImage image, ArrayList<Bitmap> list) {
         this.list = list;

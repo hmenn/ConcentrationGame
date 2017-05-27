@@ -15,6 +15,8 @@ import java.util.ArrayList;
 
 /**
  * Created by hmenn on 22.05.2017.
+ *
+ * I moved this class operations to AsyncTask
  */
 
 public class ImageListDownThread extends Thread {
