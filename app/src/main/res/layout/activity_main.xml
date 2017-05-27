@@ -20,6 +20,12 @@
             android:layout_height="wrap_content"
             app:srcCompat="@mipmap/ic_launcher" />
 
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <TableLayout
             android:id="@+id/btnArea"
             android:layout_width="match_parent"
