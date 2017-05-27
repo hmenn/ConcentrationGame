@@ -25,9 +25,11 @@ public class ImageDownThread extends Thread {
     private URL url;
     private HttpURLConnection httpURLConnection;
     private ArrayList<Bitmap> list;
+    private ArrayList<PixabayImage> order;
     private static Object lock = new Object();
 
-    public ImageDownThread(PixabayImage image, ArrayList<Bitmap> list) {
+    public ImageDownThread(PixabayImage image,ArrayList<PixabayImage> order) {
+        this.order=order;
         this.list = list;
         this.image = image;
     }
@@ -38,14 +40,16 @@ public class ImageDownThread extends Thread {
 
             // open connection
             url = new URL(image.getPreviewURL());
+            //Log.d(LOG_KEY,"D:"+image.getPreviewURL());
             httpURLConnection = (HttpURLConnection) url.openConnection();
             // download image and convert to bitmap object
             InputStream inputStream = httpURLConnection.getInputStream();
             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
 
             synchronized (lock) {
-                list.add(bitmap);
-                Log.d(LOG_KEY, "Bitmap added to sysnchronized list from "+getName());
+                image.setBitmap(bitmap);
+                order.add(image);
+                //Log.d(LOG_KEY, "Bitmap added to sysnchronized list from "+getName());
             }
 
         } catch (Exception e) {

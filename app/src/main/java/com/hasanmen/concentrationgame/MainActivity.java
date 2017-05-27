@@ -2,6 +2,7 @@ package com.hasanmen.concentrationgame;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.Toast;
 
 import com.hasanmen.concentrationgame.POJO.PixabayImage;
 
@@ -31,36 +33,32 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String LOG_KEY = "MainActivity";
 
-    private ImageButton btn_init = null;
+    private Button btnStart = null;
     private ArrayList<ImageButton> buttons = new ArrayList<>();
     private ArrayList<PixabayImage> pixabayImages = new ArrayList<>();
     private ArrayList<Bitmap> bitmaps = new ArrayList<>();
     private TableLayout tableLayout = null;
     private ProgressBar progressBar = null;
-    private Object lock = new Object();
 
-    private void addList(Bitmap bitmap) {
-        synchronized (lock) {
-            bitmaps.add(bitmap);
-
-        }
-    }
+    private int clickNum = 0;
+    private ImageButton prevClickedBtn;
+    private ArrayList<PixabayImage> order = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btn_init = (ImageButton) findViewById(R.id.imgBtn_init);
+        btnStart = (Button) findViewById(R.id.btn_start);
         tableLayout = (TableLayout) findViewById(R.id.btnArea);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         progressBar.setVisibility(View.INVISIBLE);
 
-
-        btn_init.setOnClickListener(new View.OnClickListener() {
+        btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
+
 
                     ImageListDownTask imageListDownTask = new ImageListDownTask();
                     imageListDownTask.execute(4);
@@ -72,21 +70,71 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // init 4*4 board
+        initBtnArea(4);
+
     }
 
     private void initBtnArea(int n) {
 
+        tableLayout.removeAllViews();
         for (int i = 0; i < n; ++i) {
             TableRow tableRow = new TableRow(MainActivity.this);
+            tableRow.setLayoutParams(new TableLayout.LayoutParams(
+                    TableLayout.LayoutParams.MATCH_PARENT,
+                    TableLayout.LayoutParams.MATCH_PARENT,
+                    1.0f
+            ));
             tableLayout.addView(tableRow);
 
             for (int j = 0; j < n; ++j) {
                 ImageButton btn = new ImageButton(MainActivity.this);
-                //btn.setText("Btn" + i + "" + j);
+                btn.setId(i * n + j);
+                btn.setLayoutParams(new TableRow.LayoutParams(
+                        TableRow.LayoutParams.MATCH_PARENT,
+                        TableRow.LayoutParams.MATCH_PARENT,
+                        1.0f
+                ));
+
+                btn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        //Toast.makeText(MainActivity.this,String.valueOf(clickedBtn.getId()),Toast.LENGTH_SHORT).show();
+                        ImageButton clickedBtn = (ImageButton) v;
+                        gameLogic(clickedBtn);
+                    }
+                });
+
                 buttons.add(btn);
                 tableRow.addView(btn);
             }
         }
+    }
+
+    private void gameLogic(ImageButton imgBtn) {
+
+        if (clickNum == 0) {
+            ++clickNum;
+            prevClickedBtn = imgBtn;
+            prevClickedBtn.setImageBitmap(order.get(imgBtn.getId()).getBitmap());
+        } else {
+            //imgBtn.setImageBitmap(bitmaps.get(imgBtn.getId()));
+            PixabayImage image1 = order.get(imgBtn.getId());
+            PixabayImage image2 = order.get(prevClickedBtn.getId());
+
+            if (image1.equals(image2)) { // if images are equal, open two button
+                prevClickedBtn.setImageBitmap(image2.getBitmap());
+                prevClickedBtn.setEnabled(false);
+                imgBtn.setImageBitmap(image1.getBitmap());
+                imgBtn.setEnabled(false);
+            } else { // other wise clear button images
+                imgBtn.setImageBitmap(null);
+                prevClickedBtn.setImageBitmap(null);
+            }
+            --clickNum;
+        }
+
+
     }
 
 
@@ -117,11 +165,10 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(imageNumber);
             progressBar.setVisibility(View.GONE);
 
-            initBtnArea(imageNumber);
-            for (int i = 0; i < imageNumber * imageNumber; ++i) {
-                buttons.get(i).setImageBitmap(bitmaps.get(i));
-
-            }
+            //initBtnArea(imageNumber);
+           /* for (int i = 0; i < imageNumber * imageNumber; ++i) {
+                buttons.get(i).setImageBitmap(order.get(i).getBitmap());
+            }*/
         }
 
         @Override
@@ -153,8 +200,9 @@ public class MainActivity extends AppCompatActivity {
                 imageNumber = params[0] * params[0] / 2;
                 // prepare request
                 sb.append("&per_page=" + imageNumber);
-                sb.append("&q=yellow+cars+red");
-                sb.append("&image_type=photo");
+                sb.append("&q=flowers");
+                //sb.append("&image_type=photo");
+                sb.append("&order=latest");
 
                 url = new URL(sb.toString());
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -177,7 +225,8 @@ public class MainActivity extends AppCompatActivity {
 
 
                 for (int i = 0; i < imageNumber * 2; ++i) {
-                    ImageDownThread imageDownThread = new ImageDownThread(pixabayImages.get(i / 2), bitmaps);
+                    ImageDownThread imageDownThread = new ImageDownThread(pixabayImages.get(i / 2),order);
+                    Log.d(LOG_KEY, pixabayImages.get(i / 2).toString());
                     imageDownThreads.add(imageDownThread);
                     imageDownThread.start();
                 }
@@ -186,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
                     imageDownThreads.get(i).join();
                     Log.d(LOG_KEY, "Thread " + i + " joined");
                 }
-
 
             } catch (Exception e) {
                 Log.e(LOG_KEY, e.getMessage());
@@ -215,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
                     image.setImageWidth(jsonImageArray.getJSONObject(i).getInt("imageWidth"));
                     image.setWebformatURL(jsonImageArray.getJSONObject(i).getString("webformatURL"));
                     images.add(image);
-                    Log.d(LOG_KEY, "Image:" + image.toString());
+                    //Log.d(LOG_KEY, "Image:" + image.toString());
                 }
             } catch (Exception e) {
                 Log.e(LOG_KEY, e.getMessage());

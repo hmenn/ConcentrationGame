@@ -14,11 +14,11 @@
         tools:layout_editor_absoluteX="8dp"
         tools:layout_editor_absoluteY="8dp">
 
-        <ImageButton
-            android:id="@+id/imgBtn_init"
+        <Button
+            android:id="@+id/btn_start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:srcCompat="@mipmap/ic_launcher" />
+            android:text="Start" />
 
         <ProgressBar
             android:id="@+id/progressBar"
