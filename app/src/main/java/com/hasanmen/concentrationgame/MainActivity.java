@@ -1,11 +1,10 @@
 package com.hasanmen.concentrationgame;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -13,7 +12,6 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.Toast;
 
 import com.hasanmen.concentrationgame.POJO.PixabayImage;
 
@@ -21,13 +19,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,7 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar = null;
 
     private int clickNum = 0;
-    private ImageButton prevClickedBtn;
+    private ImageButton click2Btn;
+    private ImageButton click1Btn;
     private ArrayList<PixabayImage> order = new ArrayList<>();
 
     @Override
@@ -58,11 +55,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 try {
-
-
                     ImageListDownTask imageListDownTask = new ImageListDownTask();
                     imageListDownTask.execute(4);
-
                 } catch (Exception e) {
                     Log.d(LOG_KEY, "ImageListDownThread " + e.getMessage());
                 }
@@ -71,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // init 4*4 board
-        initBtnArea(4);
+        //initBtnArea(4);
 
     }
 
@@ -115,28 +109,33 @@ public class MainActivity extends AppCompatActivity {
 
         if (clickNum == 0) {
             ++clickNum;
-            prevClickedBtn = imgBtn;
-            prevClickedBtn.setImageBitmap(order.get(imgBtn.getId()).getBitmap());
-        } else {
+            click1Btn = imgBtn;
+            click1Btn.setImageBitmap(order.get(imgBtn.getId()).getBitmap());
+        } else if(clickNum==1){
+            click2Btn = imgBtn;
             //imgBtn.setImageBitmap(bitmaps.get(imgBtn.getId()));
-            PixabayImage image1 = order.get(imgBtn.getId());
-            PixabayImage image2 = order.get(prevClickedBtn.getId());
+            final PixabayImage image1 = order.get(imgBtn.getId());
+            final PixabayImage image2 = order.get(click1Btn.getId());
+
+            imgBtn.setImageBitmap(image1.getBitmap());
 
             if (image1.equals(image2)) { // if images are equal, open two button
-                prevClickedBtn.setImageBitmap(image2.getBitmap());
-                prevClickedBtn.setEnabled(false);
-                imgBtn.setImageBitmap(image1.getBitmap());
-                imgBtn.setEnabled(false);
-            } else { // other wise clear button images
-                imgBtn.setImageBitmap(null);
-                prevClickedBtn.setImageBitmap(null);
+                click1Btn.setEnabled(false);
+                click2Btn.setEnabled(false);
+            }else{
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        click1Btn.setImageBitmap(null);
+                        click2Btn.setImageBitmap(null);
+                    }
+                },300);
             }
             --clickNum;
         }
 
-
     }
-
 
     private class ImageListDownTask extends AsyncTask<Integer, Void, Integer> {
         private final static String LOG_KEY = "ImageListDownThread";
@@ -165,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(imageNumber);
             progressBar.setVisibility(View.GONE);
 
-            //initBtnArea(imageNumber);
+            initBtnArea(imageNumber);
            /* for (int i = 0; i < imageNumber * imageNumber; ++i) {
                 buttons.get(i).setImageBitmap(order.get(i).getBitmap());
             }*/
