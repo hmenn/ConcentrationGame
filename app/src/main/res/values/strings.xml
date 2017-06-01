@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Concentration Game</string>
+    <string name="score_board_init">Score-> True:0 False:0</string>
 </resources>
