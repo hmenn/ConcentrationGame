@@ -77,7 +77,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startGame() {
-
+        trueNum = 0;
+        falseNum = 0;
+        clickNum = 0;
         try {
             pixabayImages.clear();
             buttons.clear();
@@ -233,67 +235,65 @@ public class MainActivity extends AppCompatActivity {
 
     private void gameLogic(Button imgBtn) {
 
-        if (clickNum == 0) {
-            click1Btn = imgBtn;
-            Bitmap scaledBitmap = Bitmap.createScaledBitmap(randomImages.get(click1Btn.getId()).getBitmap(), imgBtn.getWidth() - IMAGE_CROP_SIZE, imgBtn.getHeight() - IMAGE_CROP_SIZE, true);
+        if (changeToNextGame != 0) {
+            if (clickNum == 0) {
+                click1Btn = imgBtn;
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(randomImages.get(click1Btn.getId()).getBitmap(), imgBtn.getWidth() - IMAGE_CROP_SIZE, imgBtn.getHeight() - IMAGE_CROP_SIZE, true);
 
-            ++clickNum;
+                ++clickNum;
 
-            click1Btn.setBackground(new BitmapDrawable(getResources(), scaledBitmap));
+                click1Btn.setBackground(new BitmapDrawable(getResources(), scaledBitmap));
 
-            click1Btn.setEnabled(false);
-
-        } else if (clickNum == 1) {
-            click2Btn = imgBtn;
-            //imgBtn.setImageBitmap(bitmaps.get(imgBtn.getId()));
-            final PixabayImage image1 = randomImages.get(click1Btn.getId());
-            final PixabayImage image2 = randomImages.get(click2Btn.getId());
-
-            click2Btn.setBackground(new BitmapDrawable(getResources(), image2.getBitmap()));
-
-            if (image1.equals(image2)) { // if images are equal, open two button
                 click1Btn.setEnabled(false);
-                click2Btn.setEnabled(false);
-                ++trueNum;
-            } else {
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Bitmap scaledQuestion = BitmapFactory.decodeResource(getResources(), R.drawable.question_mark);
-                        scaledQuestion = Bitmap.createScaledBitmap(scaledQuestion, click1Btn.getWidth() - IMAGE_CROP_SIZE, click1Btn.getHeight() - IMAGE_CROP_SIZE, true);
-                        BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), scaledQuestion);
 
-                        click1Btn.setBackground(bitmapDrawable);
-                        click1Btn.setEnabled(true);
-                        click2Btn.setBackground(bitmapDrawable);
-                        click2Btn.setEnabled(true);
-                    }
-                }, 300);
-                ++falseNum;
-                --changeToNextGame;
-                tv_change.setText("Change:" + changeToNextGame);
+            } else if (clickNum == 1) {
+                click2Btn = imgBtn;
+                //imgBtn.setImageBitmap(bitmaps.get(imgBtn.getId()));
+                final PixabayImage image1 = randomImages.get(click1Btn.getId());
+                final PixabayImage image2 = randomImages.get(click2Btn.getId());
+
+                click2Btn.setBackground(new BitmapDrawable(getResources(), image2.getBitmap()));
+
+                if (image1.equals(image2)) { // if images are equal, open two button
+                    click1Btn.setEnabled(false);
+                    click2Btn.setEnabled(false);
+                    ++trueNum;
+                } else {
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Bitmap scaledQuestion = BitmapFactory.decodeResource(getResources(), R.drawable.question_mark);
+                            scaledQuestion = Bitmap.createScaledBitmap(scaledQuestion, click1Btn.getWidth() - IMAGE_CROP_SIZE, click1Btn.getHeight() - IMAGE_CROP_SIZE, true);
+                            BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), scaledQuestion);
+
+                            click1Btn.setBackground(bitmapDrawable);
+                            click1Btn.setEnabled(true);
+                            click2Btn.setBackground(bitmapDrawable);
+                            click2Btn.setEnabled(true);
+                        }
+                    }, 300);
+                    ++falseNum;
+                    --changeToNextGame;
+                    tv_change.setText("Change:" + changeToNextGame);
+                }
+                --clickNum;
+
+
             }
-            --clickNum;
+            tv_score.setText("SCORE -> True:" + trueNum + " False:" + falseNum);
 
-
-        }
-        tv_score.setText("SCORE -> True:" + trueNum + " False:" + falseNum);
-
-        if (trueNum == (currentGameLevel * 2) && (falseNum < (currentGameLevel * 10))) {
-            trueNum = 0;
-            falseNum = 0;
-            clickNum = 0;
-            currentGameLevel += 2;
-            startGame();
-        } else if (trueNum == currentGameLevel * 2) {
+            if (trueNum == (currentGameLevel * 2) && (falseNum < (currentGameLevel * 10))) {
+                currentGameLevel += 2;
+                startGame();
+            }
+        } else {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     Toast.makeText(MainActivity.this, "You Failed! Try Again!", Toast.LENGTH_LONG).show();
                 }
             });
-
         }
     }
 
