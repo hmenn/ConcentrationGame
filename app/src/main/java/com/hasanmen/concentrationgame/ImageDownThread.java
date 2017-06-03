@@ -4,13 +4,16 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.util.Log;
+import android.widget.Button;
 
 import com.hasanmen.concentrationgame.POJO.PixabayImage;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Objects;
 
 /**
@@ -19,25 +22,26 @@ import java.util.Objects;
 
 public class ImageDownThread extends Thread {
 
-    private static final String LOG_KEY = "ImageDownThread";
+    private static final String LOG_KEY = "DownloadWorker";
 
     private PixabayImage image;
     private URL url;
-    private HttpURLConnection httpURLConnection;
-    private ArrayList<Bitmap> list;
-    private ArrayList<PixabayImage> order;
+    private HttpURLConnection httpURLConnection = null;
+    private ArrayList<PixabayImage> randomList;
     private static Object lock = new Object();
+    private StringBuilder sb = new StringBuilder();
+    private long execTime;
 
-    public ImageDownThread(PixabayImage image,ArrayList<PixabayImage> order) {
-        this.order=order;
-        this.list = list;
+    public ImageDownThread(PixabayImage image, ArrayList<PixabayImage> randomList) {
+        this.randomList = randomList;
         this.image = image;
     }
 
     public void run() {
 
         try {
-
+            execTime = System.currentTimeMillis();
+            sb.append(" Start:").append(new SimpleDateFormat("HH:mm:ss:SSS ").format(Calendar.getInstance().getTime()));
             // open connection
             url = new URL(image.getPreviewURL());
             //Log.d(LOG_KEY,"D:"+image.getPreviewURL());
@@ -48,14 +52,19 @@ public class ImageDownThread extends Thread {
 
             synchronized (lock) {
                 image.setBitmap(bitmap);
-                order.add(image);
-                //Log.d(LOG_KEY, "Bitmap added to sysnchronized list from "+getName());
+                randomList.add(image);
             }
 
         } catch (Exception e) {
 
         } finally {
-            httpURLConnection.disconnect();
+            if (httpURLConnection != null)
+                httpURLConnection.disconnect();
+
+            execTime = System.currentTimeMillis() -execTime;
+            sb.append("-- End:").append(new SimpleDateFormat("HH:mm:ss:SSS ").format(Calendar.getInstance().getTime()));
+            sb.append("-- Execution Time(ms):").append(String.valueOf(execTime));
+            Log.d(LOG_KEY,sb.toString());
         }
 
     }
