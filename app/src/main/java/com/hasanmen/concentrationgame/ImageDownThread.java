@@ -28,7 +28,7 @@ public class ImageDownThread extends Thread {
     private URL url;
     private HttpURLConnection httpURLConnection = null;
     private ArrayList<PixabayImage> randomList;
-    private static Object lock = new Object();
+    private static Object lock = new Object(); // synchronized lock
     private StringBuilder sb = new StringBuilder();
     private long execTime;
 
@@ -50,13 +50,13 @@ public class ImageDownThread extends Thread {
             InputStream inputStream = httpURLConnection.getInputStream();
             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
 
-            synchronized (lock) {
+            synchronized (lock) { // add images to list with mutex/lock
                 image.setBitmap(bitmap);
                 randomList.add(image);
             }
 
         } catch (Exception e) {
-
+            Log.d(LOG_KEY,e.getMessage());
         } finally {
             if (httpURLConnection != null)
                 httpURLConnection.disconnect();

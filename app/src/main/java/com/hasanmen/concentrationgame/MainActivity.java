@@ -33,16 +33,16 @@ public class MainActivity extends AppCompatActivity {
     private final static String REQUEST = "https://pixabay.com/api/?key=5429432-e78aeb946ac4de95966734b5c";
     private final int IMAGE_CROP_SIZE = 30;
 
-    private ArrayList<Button> buttons = new ArrayList<>();
-    private ArrayList<PixabayImage> pixabayImages = new ArrayList<>();
+    private ArrayList<Button> buttons = new ArrayList<>(); // dynamic buttons
+    private ArrayList<PixabayImage> pixabayImages = new ArrayList<>(); // downloaded image list
     private TableLayout tableLayout = null;
     private TextView tv_score;
     private TextView tv_change;
-    private ArrayList<PixabayImage> randomImages = new ArrayList<>();
+    private ArrayList<PixabayImage> randomImages = new ArrayList<>(); // downloaded images-> synchronized with lock
 
     private Button btnStart = null;
-    private Button click2Btn;
-    private Button click1Btn;
+    private Button click2Btn; // prev clicked button
+    private Button click1Btn; // last clicked button
 
     private int trueNum; // number of true guess
     private int falseNum; // number of fail guess
@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         btnStart = (Button) findViewById(R.id.btn_start);
         tableLayout = (TableLayout) findViewById(R.id.btnArea);
 
+        // start game with initial level 4
         currentGameLevel = 4;
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -87,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
             Toast.makeText(MainActivity.this, "Downloading Images", Toast.LENGTH_SHORT).show();
 
+            // This thread will download urls, then start new worker threads to download images parallel
             Thread imageListDownThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -102,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                         int imageNumber;
                         StringBuilder requestSB = new StringBuilder(REQUEST);
                         imageNumber = currentGameLevel * currentGameLevel / 2;
-                        // prepare request
+                        // prepare request url
                         requestSB.append("&per_page=" + imageNumber);
                         requestSB.append("&q=flowers");
                         requestSB.append("&order=latest");
@@ -125,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
                         // parse json string and get image list
                         pixabayImages = parsePixaJSON(jsonMsg.toString());
 
+                        // start threads to download actual images
                         for (int i = 0; i < imageNumber * 2; ++i) {
                             ImageDownThread imageDownThread = new ImageDownThread(pixabayImages.get(i / 2), randomImages);
                             imageDownThreads.add(imageDownThread);
@@ -133,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         Log.d(LOG_THREAD1_KEY, "Download :" + imageNumber + " image address");
 
+                        // wait until all threads join/done
                         for (int i = 0; i < imageNumber * 2; ++i) {
                             imageDownThreads.get(i).join();
                             //Log.d(LOG_THREAD1_KEY, "Thread " + i + " joined");
@@ -174,8 +178,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-            initBtnArea(currentGameLevel);
-            imageListDownThread.start();
+            initBtnArea(currentGameLevel); // preapere screen
+            imageListDownThread.start(); // start thread to download urls
             tv_score.setText(R.string.score_board_init);
             changeToNextGame = currentGameLevel * 10;
             tv_change.setText("Change:" + changeToNextGame);
@@ -186,8 +190,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    // This method sets button backgrounds after all images downloaded. 2.form off buttons
     private void setButtonBackgrounds() {
         Bitmap scaledQuestion = BitmapFactory.decodeResource(getResources(), R.drawable.question_mark);
+        // resize image
         scaledQuestion = Bitmap.createScaledBitmap(scaledQuestion, buttons.get(0).getWidth() - IMAGE_CROP_SIZE, buttons.get(0).getHeight() - IMAGE_CROP_SIZE, true);
         BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), scaledQuestion);
         for (int i = 0; i < buttons.size(); ++i) {
@@ -197,8 +203,9 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, "Images Downloaded.", Toast.LENGTH_SHORT).show();
     }
 
+    // Takes n and created n*n dynamic buttons on screen
     private void initBtnArea(int n) {
-        tableLayout.removeAllViews();
+        tableLayout.removeAllViews(); // remove old buttons if there are
         for (int i = 0; i < n; ++i) {
             TableRow tableRow = new TableRow(MainActivity.this);
             tableRow.setLayoutParams(new TableLayout.LayoutParams(
@@ -233,6 +240,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // This method controls actual game logic. Users choice 2buttons, if they are equal, game will full open buttons
+    // other wise will close buttons and update game change to play
+    // change = gamelevel * 10
     private void gameLogic(Button imgBtn) {
 
         if (changeToNextGame != 0) {
@@ -263,6 +273,7 @@ public class MainActivity extends AppCompatActivity {
                     handler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
+                            // add image close delayed effect
                             Bitmap scaledQuestion = BitmapFactory.decodeResource(getResources(), R.drawable.question_mark);
                             scaledQuestion = Bitmap.createScaledBitmap(scaledQuestion, click1Btn.getWidth() - IMAGE_CROP_SIZE, click1Btn.getHeight() - IMAGE_CROP_SIZE, true);
                             BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), scaledQuestion);
@@ -278,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
                     tv_change.setText("Change:" + changeToNextGame);
                 }
                 --clickNum;
-
 
             }
             tv_score.setText("SCORE -> True:" + trueNum + " False:" + falseNum);
@@ -297,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // This method parses pixabay json string and returns PixaBayImage POJO object to access images,urls easly
     private ArrayList<PixabayImage> parsePixaJSON(String json) {
 
         ArrayList<PixabayImage> images = new ArrayList<>();
@@ -309,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
             JSONObject jsonObject = new JSONObject(json);
             JSONArray jsonImageArray = jsonObject.getJSONArray("hits");
             for (int i = 0; i < jsonImageArray.length(); ++i) {
-                PixabayImage image = new PixabayImage();
+                PixabayImage image = new PixabayImage(); // get values and create new object per image
                 image.setPreviewURL(jsonImageArray.getJSONObject(i).getString("previewURL"));
                 image.setImageHeight(jsonImageArray.getJSONObject(i).getInt("imageHeight"));
                 image.setImageWidth(jsonImageArray.getJSONObject(i).getInt("imageWidth"));
