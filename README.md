@@ -17,10 +17,13 @@ This project created for CSE312 Operating Systems. Main purpose of this game is 
 
 ### Example Images
 * Open Game/Images downloading
+
 <img src="./images/first.png" width="270" height="500"> <img src="./images/downloadImages.png" width="270" height="500" >
 
 * Images Downloaded / Click Images
+
 <img src="./images/setImages.png" width="270" height="500"> <img src="./images/clicks.png" width="270" height="500">
 
 * LevelUp / Changes done
+
 <img src="./images/levelup.png" width="270" height="500"> <img src="./images/failed.png" width="270" height="500">
